@@ -1,0 +1,7 @@
+{
+    "restaurants": {
+        "Pizza Palace": { "sheet_id": "your_sheet_id_1" },
+        "Burger House": { "sheet_id": "your_sheet_id_2" },
+        "Sushi Spot": { "sheet_id": "your_sheet_id_3" }
+    }
+}
