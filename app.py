@@ -49,16 +49,20 @@ if st.button("Login"):
             df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%d/%m/%Y %H:%M:%S", errors="coerce", dayfirst=True)
         
         # Filters
-        if "userName" in df.columns:
-            users = df["userName"].unique()
-            selected_users = st.sidebar.multiselect("Select Users", users, default=users)
-            df = df[df["userName"].isin(selected_users)]
-        
-        if "type" in df.columns:
-            types = df["type"].unique()
-            selected_type = st.sidebar.multiselect("Select Transaction Type", types, default=types)
-            df = df[df["type"].isin(selected_type)]
-        
+        st.sidebar.header("Filters")
+
+        if "userName" in df.columns or "Guest Name" in df.columns:
+            name_column = "userName" if "userName" in df.columns else "Guest Name"
+            users = df[name_column].dropna().unique().tolist()
+            selected_users = st.sidebar.multiselect("Select Users/Guests", users, default=users if users else [])
+            df = df[df[name_column].isin(selected_users)]
+
+        if "type" in df.columns or "Status" in df.columns:
+            type_column = "type" if "type" in df.columns else "Status"
+            types = df[type_column].dropna().unique().tolist()
+            selected_type = st.sidebar.multiselect("Select Type/Status", types, default=types if types else [])
+            df = df[df[type_column].isin(selected_type)]
+
         date_range = st.sidebar.date_input("Select Date Range", [])
         if len(date_range) == 2:
             start_date, end_date = date_range
