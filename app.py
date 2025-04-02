@@ -10,43 +10,68 @@ restaurants = config["restaurants"]
 
 st.title("📊 Restaurant Transaction Dashboard")
 
-# Initialize session state
+# Initialize session state for authentication
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'selected_restaurant' not in st.session_state:
+    st.session_state.selected_restaurant = None
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
 if 'filtered_df' not in st.session_state:
     st.session_state.filtered_df = pd.DataFrame()
 
-# Step 1: Select restaurant
-dropdown_options = list(restaurants.keys())
-selected_restaurant = st.selectbox("Select your restaurant:", dropdown_options)
+# Only show login form if not authenticated
+if not st.session_state.authenticated:
+    with st.form("login_form"):
+        # Step 1: Select restaurant
+        dropdown_options = list(restaurants.keys())
+        selected_restaurant = st.selectbox("Select your restaurant:", dropdown_options)
+        
+        # Step 2: Enter password
+        password_input = st.text_input("Enter password:", type="password")
+        
+        login_button = st.form_submit_button("Login")
 
-# Step 2: Enter password
-password_input = st.text_input("Enter password:", type="password")
+    if login_button:
+        # Fetch correct password securely from Streamlit secrets
+        correct_password = st.secrets["restaurants"].get(selected_restaurant.lower().replace(" ", "_"), "")
+        
+        if password_input == correct_password:
+            st.session_state.authenticated = True
+            st.session_state.selected_restaurant = selected_restaurant
+            st.success(f"Access granted to {selected_restaurant}!")
+            st.experimental_rerun()  # Rerun to hide the login form
+        else:
+            st.error("Incorrect password. Access denied!")
 
-# Fetch correct password securely from Streamlit secrets
-correct_password = st.secrets["restaurants"].get(selected_restaurant.lower().replace(" ", "_"), "")
+# Only show dashboard if authenticated
+if st.session_state.authenticated:
+    # Add logout button
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.authenticated = False
+        st.session_state.selected_restaurant = None
+        st.session_state.df = pd.DataFrame()
+        st.session_state.filtered_df = pd.DataFrame()
+        st.experimental_rerun()
+    
+    # Load correct spreadsheet for the selected restaurant
+    SHEET_ID = restaurants[st.session_state.selected_restaurant]["sheet_id"]
+    SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
-if st.button("Login"):
-    if password_input == correct_password:
-        st.success(f"Access granted to {selected_restaurant}!")
+    @st.cache_data(ttl=300)  # Cache for 5 minutes
+    def load_transactions(sheet_url):
+        try:
+            df = pd.read_csv(sheet_url)
+            if not df.empty and "Timestamp" in df.columns:
+                df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors='coerce', dayfirst=True)
+                df = df.dropna(subset=["Timestamp"])
+            return df
+        except Exception as e:
+            st.error(f"❌ Error loading data: {str(e)}")
+            return pd.DataFrame()
 
-        # Load correct spreadsheet for the selected restaurant
-        SHEET_ID = restaurants[selected_restaurant]["sheet_id"]
-        SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
-
-        @st.cache_data(ttl=300)  # Cache for 5 minutes
-        def load_transactions(sheet_url):
-            try:
-                df = pd.read_csv(sheet_url)
-                if not df.empty and "Timestamp" in df.columns:
-                    df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors='coerce', dayfirst=True)
-                    df = df.dropna(subset=["Timestamp"])
-                return df
-            except Exception as e:
-                st.error(f"❌ Error loading data: {str(e)}")
-                return pd.DataFrame()
-
-        # Load Data
+    # Load Data
+    if st.session_state.df.empty:
         st.session_state.df = load_transactions(SHEET_URL)
         st.session_state.filtered_df = st.session_state.df.copy()
         
@@ -54,8 +79,6 @@ if st.button("Login"):
             st.warning("No data loaded or all data filtered out!")
             st.stop()
 
-# Only show filters and data if logged in and data exists
-if not st.session_state.df.empty:
     # Refresh Button
     if st.sidebar.button("🔄 Refresh Data"):
         st.cache_data.clear()
@@ -130,5 +153,3 @@ if not st.session_state.df.empty:
         st.altair_chart(user_pie, use_container_width=True)
 
     st.success("Dashboard Updated ✅")
-elif password_input and password_input != correct_password:
-    st.error("Incorrect password. Access denied!")
