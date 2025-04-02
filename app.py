@@ -21,9 +21,6 @@ password_input = st.text_input("Enter password:", type="password")
 # Fetch correct password securely from Streamlit secrets
 correct_password = st.secrets["restaurants"].get(selected_restaurant.lower().replace(" ", "_"), "")
 
-# Debugging output: Show selected restaurant and expected password
-st.write(f"🔍 Debug: Selected Restaurant = {selected_restaurant}")
-st.write(f"🔍 Debug: Expected Password = {correct_password}")
 
 if st.button("Login"):
     if password_input == correct_password:
@@ -34,8 +31,7 @@ if st.button("Login"):
         SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
         # Debugging output: Show the loaded sheet ID and URL
-        st.write(f"🔍 Debug: Loaded Sheet ID = {SHEET_ID}")
-        st.write(f"🔍 Debug: Fetching data from = {SHEET_URL}")
+        
 
         @st.cache_data(ttl=0)  # Forces fresh data load each time
         def load_transactions(sheet_url):
@@ -53,10 +49,6 @@ if st.button("Login"):
 
         # Load Data
         df = load_transactions(SHEET_URL)
-
-        # Debugging output: Show first few rows of loaded data
-        st.write("🔍 Debug: First 5 rows of data:")
-        st.write(df.head())
 
         # Convert date column if present
         if "Timestamp" in df.columns:
@@ -84,9 +76,7 @@ if st.button("Login"):
 
         st.dataframe(df)
 
-        # Debugging output: Show filtered data
-        st.write("🔍 Debug: Filtered Data:")
-        st.write(df.head())
+        
 
         # Charts
         st.subheader("Transaction Summary")
