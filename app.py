@@ -21,10 +21,6 @@ password_input = st.text_input("Enter password:", type="password")
 # Fetch correct password securely from Streamlit secrets
 correct_password = st.secrets["restaurants"].get(selected_restaurant.lower().replace(" ", "_"), "")
 
-# Debugging output: Show selected restaurant and expected password
-st.write(f"🔍 Debug: Selected Restaurant = {selected_restaurant}")
-st.write(f"🔍 Debug: Expected Password = {correct_password}")
-
 if st.button("Login"):
     if password_input == correct_password:
         st.success(f"Access granted to {selected_restaurant}!")
@@ -33,18 +29,12 @@ if st.button("Login"):
         SHEET_ID = restaurants[selected_restaurant]["sheet_id"]
         SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
-        # Debugging output: Show the loaded sheet ID and URL
-        st.write(f"🔍 Debug: Loaded Sheet ID = {SHEET_ID}")
-        st.write(f"🔍 Debug: Fetching data from = {SHEET_URL}")
-
-        @st.cache_data(ttl=0)  # Forces fresh data load each time
+        @st.cache_data(ttl=0)
         def load_transactions(sheet_url):
             try:
-                df = pd.read_csv(sheet_url)
-                st.write("✅ Data loaded successfully!")
-                return df
-            except Exception as e:
-                st.error(f"❌ Error loading data: {str(e)}")
+                return pd.read_csv(sheet_url)
+            except:
+                st.error("❌ Error loading data. Make sure the Google Sheet is publicly accessible.")
                 return pd.DataFrame()
 
         # Refresh Button
@@ -53,10 +43,6 @@ if st.button("Login"):
 
         # Load Data
         df = load_transactions(SHEET_URL)
-
-        # Debugging output: Show first few rows of loaded data
-        st.write("🔍 Debug: First 5 rows of data:")
-        st.write(df.head())
 
         # Convert date column if present
         if "Timestamp" in df.columns:
@@ -83,10 +69,6 @@ if st.button("Login"):
             df = df[(df["Timestamp"] >= pd.to_datetime(start_date)) & (df["Timestamp"] <= pd.to_datetime(end_date))]
 
         st.dataframe(df)
-
-        # Debugging output: Show filtered data
-        st.write("🔍 Debug: Filtered Data:")
-        st.write(df.head())
 
         # Charts
         st.subheader("Transaction Summary")
