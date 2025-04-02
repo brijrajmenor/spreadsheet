@@ -1,7 +1,6 @@
 {
     "restaurants": {
-        "Pizza Palace": { "sheet_id": "your_sheet_id_1" },
-        "Burger House": { "sheet_id": "your_sheet_id_2" },
-        "Sushi Spot": { "sheet_id": "your_sheet_id_3" }
+        "Monarch Turbhe Service Request": { "sheet_id": "1eQHO85IKOid6msMa8Um_vRKCtTJFFPj-xCswA6UdHhs" },
+        "Maa Anjani Loyalty Points": { "sheet_id": "1O_leCJtr7ns0-v-xJZue5sHeYEYazn7Fu3q7vz1-XQE" }
     }
 }
