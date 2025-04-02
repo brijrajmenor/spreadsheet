@@ -7,8 +7,8 @@ import json
 with open("config.json", "r") as file:
     config = json.load(file)
 restaurants = config["restaurants"]
-
-st.title("📊 Restaurant Transaction Dashboard")
+st.header("Netcreators Automation", divider="gray")
+st.subheader("📊 Restaurant Transaction Dashboard")
 
 # Initialize session state for authentication
 if 'authenticated' not in st.session_state:
