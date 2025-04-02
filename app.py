@@ -40,7 +40,7 @@ if not st.session_state.authenticated:
             st.session_state.authenticated = True
             st.session_state.selected_restaurant = selected_restaurant
             st.success(f"Access granted to {selected_restaurant}!")
-            st.experimental_rerun()  # Rerun to hide the login form
+            st.rerun()  # Rerun to hide the login form
         else:
             st.error("Incorrect password. Access denied!")
 
@@ -52,7 +52,7 @@ if st.session_state.authenticated:
         st.session_state.selected_restaurant = None
         st.session_state.df = pd.DataFrame()
         st.session_state.filtered_df = pd.DataFrame()
-        st.experimental_rerun()
+        st.rerun()
     
     # Load correct spreadsheet for the selected restaurant
     SHEET_ID = restaurants[st.session_state.selected_restaurant]["sheet_id"]
@@ -84,7 +84,7 @@ if st.session_state.authenticated:
         st.cache_data.clear()
         st.session_state.df = load_transactions(SHEET_URL)
         st.session_state.filtered_df = st.session_state.df.copy()
-        st.experimental_rerun()
+        st.rerun()
 
     # Filters
     st.sidebar.header("Filters")
