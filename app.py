@@ -52,7 +52,7 @@ if st.button("Login"):
 
         # Convert date column if present
         if "Timestamp" in df.columns:
-            df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
+            df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%d/%m/%Y %H:%M:%S", errors="coerce", dayfirst=True)
 
         # Filters
         st.sidebar.header("Filters")
