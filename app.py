@@ -53,17 +53,21 @@ if st.button("Login"):
         # Filters (Apply only if columns exist)
         st.sidebar.header("Filters")
 
-        if "userName" in df.columns or "Guest Name" in df.columns:
-            name_column = "userName" if "userName" in df.columns else "Guest Name"
-            users = df[name_column].unique()
-            selected_users = st.sidebar.multiselect("Select Users/Guests", users, default=users)
-            df = df[df[name_column].isin(selected_users)]
+        # Filters (Apply only if columns exist)
+st.sidebar.header("Filters")
 
-        if "type" in df.columns or "Status" in df.columns:
-            type_column = "type" if "type" in df.columns else "Status"
-            types = df[type_column].unique()
-            selected_type = st.sidebar.multiselect("Select Type/Status", types, default=types)
-            df = df[df[type_column].isin(selected_type)]
+if "userName" in df.columns or "Guest Name" in df.columns:
+    name_column = "userName" if "userName" in df.columns else "Guest Name"
+    users = df[name_column].dropna().unique().tolist()  # Remove NaN
+    selected_users = st.sidebar.multiselect("Select Users/Guests", users, default=users)
+    df = df[df[name_column].isin(selected_users)]
+
+if "type" in df.columns or "Status" in df.columns:
+    type_column = "type" if "type" in df.columns else "Status"
+    types = df[type_column].dropna().unique().tolist()  # Remove NaN
+    selected_type = st.sidebar.multiselect("Select Type/Status", types, default=types)
+    df = df[df[type_column].isin(selected_type)]
+
 
         if date_column:
             date_range = st.sidebar.date_input("Select Date Range", [])
