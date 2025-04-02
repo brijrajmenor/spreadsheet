@@ -21,7 +21,6 @@ password_input = st.text_input("Enter password:", type="password")
 # Fetch correct password securely from Streamlit secrets
 correct_password = st.secrets["restaurants"].get(selected_restaurant.lower().replace(" ", "_"), "")
 
-
 if st.button("Login"):
     if password_input == correct_password:
         st.success(f"Access granted to {selected_restaurant}!")
@@ -30,59 +29,69 @@ if st.button("Login"):
         SHEET_ID = restaurants[selected_restaurant]["sheet_id"]
         SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
-        # Debugging output: Show the loaded sheet ID and URL
-        
-
-        @st.cache_data(ttl=0)  # Forces fresh data load each time
+        @st.cache_data(ttl=300)  # Cache for 5 minutes
         def load_transactions(sheet_url):
             try:
                 df = pd.read_csv(sheet_url)
-                st.write("✅ Data loaded successfully!")
+                if not df.empty and "Timestamp" in df.columns:
+                    df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors='coerce', dayfirst=True)
+                    df = df.dropna(subset=["Timestamp"])
                 return df
             except Exception as e:
                 st.error(f"❌ Error loading data: {str(e)}")
                 return pd.DataFrame()
 
-        # Refresh Button
-        if st.sidebar.button("🔄 Refresh Data"):
-            st.experimental_rerun()
-
         # Load Data
         df = load_transactions(SHEET_URL)
+        
+        if df.empty:
+            st.warning("No data loaded or all data filtered out!")
+            st.stop()
 
-        # Convert date column if present
-        if "Timestamp" in df.columns:
-            df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%d/%m/%Y %H:%M:%S", errors="coerce", dayfirst=True)
+        # Refresh Button
+        if st.sidebar.button("🔄 Refresh Data"):
+            st.cache_data.clear()
+            st.experimental_rerun()
 
         # Filters
         st.sidebar.header("Filters")
 
-        if "userName" in df.columns or "Guest Name" in df.columns:
-            name_column = "userName" if "userName" in df.columns else "Guest Name"
-            users = df[name_column].dropna().unique().tolist()
-            selected_users = st.sidebar.multiselect("Select Users/Guests", users, default=users if users else [])
-            df = df[df[name_column].isin(selected_users)]
+        # User filter
+        name_col = next((col for col in ["userName", "Guest Name"] if col in df.columns), None)
+        if name_col:
+            users = df[name_col].dropna().unique().tolist()
+            selected_users = st.sidebar.multiselect("Select Users/Guests", users, default=users)
+            df = df[df[name_col].isin(selected_users)] if selected_users else df
 
-        if "type" in df.columns or "Status" in df.columns:
-            type_column = "type" if "type" in df.columns else "Status"
-            types = df[type_column].dropna().unique().tolist()
-            selected_type = st.sidebar.multiselect("Select Type/Status", types, default=types if types else [])
-            df = df[df[type_column].isin(selected_type)]
+        # Type filter
+        type_col = next((col for col in ["type", "Status"] if col in df.columns), None)
+        if type_col:
+            types = df[type_col].dropna().unique().tolist()
+            selected_type = st.sidebar.multiselect("Select Type/Status", types, default=types)
+            df = df[df[type_col].isin(selected_type)] if selected_type else df
 
-        date_range = st.sidebar.date_input("Select Date Range", [])
-        if len(date_range) == 2:
-            start_date, end_date = date_range
-            df = df[(df["Timestamp"] >= pd.to_datetime(start_date)) & (df["Timestamp"] <= pd.to_datetime(end_date))]
+        # Date filter
+        if "Timestamp" in df.columns:
+            min_date = df["Timestamp"].min().date()
+            max_date = df["Timestamp"].max().date()
+            date_range = st.sidebar.date_input(
+                "Select Date Range",
+                [min_date, max_date],
+                min_value=min_date,
+                max_value=max_date
+            )
+            if len(date_range) == 2:
+                start_date, end_date = date_range
+                df = df[(df["Timestamp"].dt.date >= start_date) & (df["Timestamp"].dt.date <= end_date)]
 
+        # Display data
         st.dataframe(df)
-
-        
 
         # Charts
         st.subheader("Transaction Summary")
 
         # Bar Chart for Transaction Types
-        if "type" in df.columns and "amount" in df.columns:
+        if "type" in df.columns and "amount" in df.columns and not df.empty:
             bar_chart = alt.Chart(df).mark_bar().encode(
                 x=alt.X("type", title="Transaction Type"),
                 y=alt.Y("sum(amount)", title="Total Amount"),
@@ -91,7 +100,7 @@ if st.button("Login"):
             st.altair_chart(bar_chart, use_container_width=True)
 
         # Pie Chart for User Transactions
-        if "userName" in df.columns and "amount" in df.columns:
+        if "userName" in df.columns and "amount" in df.columns and not df.empty:
             user_pie = alt.Chart(df).mark_arc().encode(
                 theta="sum(amount)",
                 color="userName",
